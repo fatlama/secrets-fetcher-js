@@ -5,6 +5,8 @@ import { CacheConfig } from './types'
 import { CachedSecretVersion } from './cached-secret-version'
 import { randomlyChooseTtl } from './util'
 
+const MAX_VERSIONS_CACHE = 10
+
 interface CachedSecretArgs {
   secretId: string
   client: Pick<SecretsManager, 'describeSecret' | 'getSecretValue'>
@@ -36,7 +38,8 @@ interface StringHashMap {
  *     secretId: 'mySuperTopSecret',
  *     client: new AWS.SecretsManager(),
  *     config: {
- *       secretRefreshInterval: 60 * 5, ...
+ *       secretRefreshInterval: 60 * 5 * 1000,
+ *       ...
  *     }
  *   })
  * // Fetch the default AWSCURRENT value
@@ -62,7 +65,7 @@ export class CachedSecret {
     this._secretId = args.secretId
 
     this._versionIdsByStage = {}
-    this._versionCache = new LRU<string, CachedSecretVersion>(10)
+    this._versionCache = new LRU<string, CachedSecretVersion>(MAX_VERSIONS_CACHE)
     this._nextRefreshTime = Date.now() - 1
   }
 

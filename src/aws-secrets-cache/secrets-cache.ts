@@ -34,6 +34,26 @@ interface GetSecretValueOpts {
  *   'mySecret',
  *   { versionStage: 'AWSPREVIOUS' }
  * })
+ *
+ * == Call Flow
+ *
+ * 1. find or initialize a CachedSecret for the secretId
+ * 2. call DescribeSecret to retrieve a list of VersionStagesByVersionId (or use the cache)
+ * 3. find or initialize the CachedSecretVersion for the needed versionId
+ * 4. call GetSecretValue for the needed versionId (or use the cache)
+ *
+ * == Caches
+ *
+ * There are four major caches to be aware of inside of the system:
+ * 1. SecretsCache (this package) caches up to config.maxCacheSize CachedSecret objects
+ * 2. CachedSecret caches the most recent DescribeSecret's VersionStagesByVersionId response
+ * 3. CachedSecret caches up to 10 CachedSecretVersion objects (this should be more than sufficient)
+ * 4. CachedSecretValue caches the most recent GetSecretValue response
+ *
+ * == AWS Permissions Required
+ * * secretsmanager:DescribeSecret
+ * * secretsmanager:GetSecretValue
+ *
  */
 export class SecretsCache {
   private _client: Pick<SecretsManager, 'describeSecret' | 'getSecretValue'>
