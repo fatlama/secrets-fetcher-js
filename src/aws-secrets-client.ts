@@ -1,14 +1,9 @@
 import { SecretsManager as AWSSecretsManager } from 'aws-sdk'
 import { GetSecretValueResponse } from 'aws-sdk/clients/secretsmanager'
+import { FetchOpts, SecretsClient } from './types'
 
 interface SecretsClientOpts {
   awsClient: AWSSecretsManager
-}
-
-interface FetchOpts {
-  secretId: string
-  versionId?: string
-  versionStage?: string
 }
 
 /**
@@ -25,7 +20,7 @@ interface FetchOpts {
  *
  * * Add an L1 caching option
  */
-export class SecretsClient {
+export class AWSSecretsClient implements SecretsClient {
   private _client: AWSSecretsManager
 
   public constructor(clientOpts: Partial<SecretsClientOpts> = {}) {

@@ -1,1 +1,2 @@
-export * from './secrets-client'
+export * from './types'
+export * from './aws-secrets-client'

@@ -1,8 +1,8 @@
 import * as index from '../index'
-import { SecretsClient } from '../secrets-client'
+import { AWSSecretsClient } from '../aws-secrets-client'
 
 describe('index', () => {
-  it('exports SecretsClient', () => {
-    expect(index.SecretsClient).toEqual(SecretsClient)
+  it('exports AWSSecretsClient', () => {
+    expect(index.AWSSecretsClient).toEqual(AWSSecretsClient)
   })
 })

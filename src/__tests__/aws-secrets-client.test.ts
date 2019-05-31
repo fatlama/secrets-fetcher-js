@@ -1,6 +1,6 @@
 import * as AWS from 'aws-sdk-mock'
 import { AWSError, SecretsManager } from 'aws-sdk'
-import { SecretsClient } from '../secrets-client'
+import { AWSSecretsClient } from '../aws-secrets-client'
 import { GetSecretValueRequest, GetSecretValueResponse } from 'aws-sdk/clients/secretsmanager'
 
 interface Credential {
@@ -8,8 +8,8 @@ interface Credential {
   password: string
 }
 
-describe('SecretsClient', () => {
-  let client: SecretsClient, awsClient: SecretsManager
+describe('AWSSecretsClient', () => {
+  let client: AWSSecretsClient, awsClient: SecretsManager
 
   const jsonSecret = {
     username: 'kitty',
@@ -51,7 +51,7 @@ describe('SecretsClient', () => {
     })
 
     awsClient = new SecretsManager()
-    client = new SecretsClient({ awsClient })
+    client = new AWSSecretsClient({ awsClient })
   })
 
   afterEach(() => {
