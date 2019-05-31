@@ -9,6 +9,11 @@ interface CachedSecretVersionArgs {
   versionId: string
 }
 
+/**
+ * This is a cache for a particular VersionId of a secret
+ *
+ * VersionIds contain the actual value for a particular GetSecretValue response
+ */
 export class CachedSecretVersion {
   private _config: CacheConfig
   private _client: Pick<SecretsManager, 'getSecretValue'>
