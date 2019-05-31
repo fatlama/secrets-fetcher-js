@@ -58,70 +58,133 @@ describe('AWSSecretsClient', () => {
     AWS.restore()
   })
 
+  describe('constructor', () => {
+    it('uses the supplied awsClient', async () => {
+      const awsClient = new SecretsManager()
+      const getSpy = jest.spyOn(awsClient, 'getSecretValue')
+
+      const client = new AWSSecretsClient({ awsClient })
+      await client.fetchString('mySecretString')
+
+      expect(getSpy).toHaveBeenCalledTimes(1)
+    })
+
+    it('can initialize its own awsClient', async () => {
+      const client = new AWSSecretsClient()
+      const result = await client.fetchString('mySecretString')
+      expect(result).toEqual(textSecret)
+    })
+  })
+
   describe('fetchString', () => {
     it('returns the expected string from a SecretString', async () => {
-      const secret = await client.fetchString({ secretId: 'mySecretString' })
+      const secret = await client.fetchString('mySecretString')
       expect(secret).toEqual(textSecret)
     })
 
     it('returns the expected string from a SecretBinary', async () => {
-      const secret = await client.fetchString({ secretId: 'mySecretBinary' })
+      const secret = await client.fetchString('mySecretBinary')
       expect(secret).toEqual(textSecret)
     })
 
+    it('passes down the versionId and versionStage if provided', async () => {
+      const getSpy = jest.spyOn(awsClient, 'getSecretValue')
+
+      const versionId = '12345678'
+      const versionStage = 'AWSPREVIOUS'
+
+      await client.fetchString('mySecretString', { versionId, versionStage })
+
+      expect(getSpy).toBeCalledWith({
+        SecretId: 'mySecretString',
+        VersionId: versionId,
+        VersionStage: versionStage
+      })
+    })
+
     it('throws the original AWS error on a missing secret', async () => {
-      const promise = client.fetchString({ secretId: 'not-a-real-secret' })
+      const promise = client.fetchString('not-a-real-secret')
       await expect(promise).rejects.toThrow(AWSError)
     })
 
     it('throws an error if AWS returns an invalid response', async () => {
-      const promise = client.fetchString({ secretId: 'awsDoneMessedUp' })
+      const promise = client.fetchString('awsDoneMessedUp')
       await expect(promise).rejects.toThrow(Error)
     })
   })
 
   describe('fetchJSON', () => {
     it('returns the expected JSON from a SecretString', async () => {
-      const secret = await client.fetchJSON<Credential>({ secretId: 'mySecretString' })
+      const secret = await client.fetchJSON<Credential>('mySecretString')
       expect(secret).toEqual(jsonSecret)
     })
 
     it('returns the expected JSON from a SecretBinary', async () => {
-      const secret = await client.fetchJSON<Credential>({ secretId: 'mySecretBinary' })
+      const secret = await client.fetchJSON<Credential>('mySecretBinary')
       expect(secret).toEqual(jsonSecret)
     })
 
+    it('passes down the versionId and versionStage if provided', async () => {
+      const getSpy = jest.spyOn(awsClient, 'getSecretValue')
+
+      const versionId = '12345678'
+      const versionStage = 'AWSPREVIOUS'
+
+      await client.fetchJSON('mySecretString', { versionId, versionStage })
+
+      expect(getSpy).toBeCalledWith({
+        SecretId: 'mySecretString',
+        VersionId: versionId,
+        VersionStage: versionStage
+      })
+    })
+
     it('throws the original JSON parse exception on invalid JSON', async () => {
-      const promise = client.fetchJSON<Credential>({ secretId: 'myInvalidJson' })
+      const promise = client.fetchJSON<Credential>('myInvalidJson')
       expect(promise).rejects.toThrow(SyntaxError)
     })
 
     it('throws the original AWS error on a missing secret', async () => {
-      const promise = client.fetchJSON<Credential>({ secretId: 'not-a-real-secret' })
+      const promise = client.fetchJSON<Credential>('not-a-real-secret')
       await expect(promise).rejects.toThrow(AWSError)
     })
   })
 
   describe('fetchBuffer', () => {
     it('returns the expected string from a SecretString', async () => {
-      const secret = await client.fetchBuffer({ secretId: 'mySecretString' })
+      const secret = await client.fetchBuffer('mySecretString')
       expect(secret).toBeInstanceOf(Buffer)
       expect(secret.toString()).toEqual(textSecret)
     })
 
     it('returns the expected string from a SecretBinary', async () => {
-      const secret = await client.fetchBuffer({ secretId: 'mySecretBinary' })
+      const secret = await client.fetchBuffer('mySecretBinary')
       expect(secret).toBeInstanceOf(Buffer)
       expect(secret.toString()).toEqual(textSecret)
     })
 
+    it('passes down the versionId and versionStage if provided', async () => {
+      const getSpy = jest.spyOn(awsClient, 'getSecretValue')
+
+      const versionId = '12345678'
+      const versionStage = 'AWSPREVIOUS'
+
+      await client.fetchBuffer('mySecretString', { versionId, versionStage })
+
+      expect(getSpy).toBeCalledWith({
+        SecretId: 'mySecretString',
+        VersionId: versionId,
+        VersionStage: versionStage
+      })
+    })
+
     it('throws the original AWS error on a missing secret', async () => {
-      const promise = client.fetchBuffer({ secretId: 'not-a-real-secret' })
+      const promise = client.fetchBuffer('not-a-real-secret')
       await expect(promise).rejects.toThrow(AWSError)
     })
 
     it('throws an error if AWS returns an invalid response', async () => {
-      const promise = client.fetchBuffer({ secretId: 'awsDoneMessedUp' })
+      const promise = client.fetchBuffer('awsDoneMessedUp')
       await expect(promise).rejects.toThrow(Error)
     })
   })

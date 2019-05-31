@@ -14,7 +14,10 @@ interface SecretsClientOpts {
  * == Getting started
  *
  * > const client = new SecretsClient()
- * > const credentials: Credentials = await client.fetchString<Credentials>({ secretId: 'my/secret/name' })
+ * > const credentials = await client.fetchJSON<Credentials>('my/secret/name')
+ *
+ * // Fetch for a specific VersionStage
+ * > const apiKey = await client.fetchString('my/api/key', { versionStage: 'AWSPENDING' })
  *
  * == TODO
  *
@@ -31,18 +34,18 @@ export class AWSSecretsClient implements SecretsClient {
    * Fetch the secret and attempt to parse the payload as JSON
    *
    * == Example
-   * > const credentials: Credentials = await client.fetchString<Credentials>({ secretId: 'my/secret/name' })
+   * > const credentials: Credentials = await client.fetchString<Credentials>('my/secret/name')
    *
    * @type T the expected return shape
    */
-  public async fetchJSON<T>(fetchArgs: FetchOpts): Promise<T> {
-    const secret = await this.fetchString(fetchArgs)
+  public async fetchJSON<T>(secretId: string, opts: FetchOpts = {}): Promise<T> {
+    const secret = await this.fetchString(secretId, opts)
 
     return JSON.parse(secret)
   }
 
-  public async fetchString(fetchArgs: FetchOpts): Promise<string> {
-    const secret = await this._getSecret(fetchArgs)
+  public async fetchString(secretId: string, opts: FetchOpts = {}): Promise<string> {
+    const secret = await this._getSecret(secretId, opts)
 
     if (secret.SecretString) {
       return secret.SecretString
@@ -59,8 +62,8 @@ export class AWSSecretsClient implements SecretsClient {
    * Fetch the secret and return the response payload as a Buffer regardless if the payload
    * is in SecretString or SecretBinary
    */
-  public async fetchBuffer(fetchArgs: FetchOpts): Promise<Buffer> {
-    const secret = await this._getSecret(fetchArgs)
+  public async fetchBuffer(secretId: string, opts: FetchOpts = {}): Promise<Buffer> {
+    const secret = await this._getSecret(secretId, opts)
 
     if (secret.SecretBinary) {
       return Buffer.from(secret.SecretBinary as string, 'base64')
@@ -73,8 +76,8 @@ export class AWSSecretsClient implements SecretsClient {
     throw new Error('expected SecretString or SecretBinary to be present')
   }
 
-  private async _getSecret(fetchArgs: FetchOpts): Promise<GetSecretValueResponse> {
-    const { secretId, versionId, versionStage } = fetchArgs
+  private async _getSecret(secretId: string, opts: FetchOpts): Promise<GetSecretValueResponse> {
+    const { versionId, versionStage } = opts
 
     return this._client
       .getSecretValue({
