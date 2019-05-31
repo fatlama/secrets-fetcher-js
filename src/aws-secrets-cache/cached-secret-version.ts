@@ -1,6 +1,7 @@
 import { SecretsManager } from 'aws-sdk'
 import { GetSecretValueResponse } from 'aws-sdk/clients/secretsmanager'
 import { CacheConfig } from './types'
+import { randomlyChooseTtl } from './util'
 
 interface CachedSecretVersionArgs {
   client: Pick<SecretsManager, 'getSecretValue'>
@@ -69,10 +70,8 @@ export class CachedSecretVersion {
    * config.secretRefreshInterval
    */
   private _resetRefreshTime(): void {
-    // Aim to have the refresh happen in the latter half between now and the TTL
-    const ttl = this._config.secretRefreshInterval
-    const midTtl = Math.floor(ttl / 2)
-    const randomTtl = midTtl + Math.random() * (ttl - midTtl)
-    this._nextRefreshTime = Date.now() + randomTtl
+    const maxTtl = this._config.secretRefreshInterval
+    const ttl = randomlyChooseTtl(maxTtl)
+    this._nextRefreshTime = Date.now() + ttl
   }
 }
