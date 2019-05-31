@@ -1,13 +1,13 @@
-import { sayHello } from '../index'
+import * as index from '../index'
+import { AWSSecretsClient } from '../aws-secrets-client'
+import { MockSecretsClient } from '../mock-secrets-client'
 
-describe('sayHello', () => {
-  it('returns the default greeting with no argument', () => {
-    const result = sayHello()
-    expect(result).toEqual('Hello, World')
+describe('index', () => {
+  it('exports AWSSecretsClient', () => {
+    expect(index.AWSSecretsClient).toEqual(AWSSecretsClient)
   })
 
-  it('returns the warm welcome for the specified name', () => {
-    const result = sayHello('Larry the Llama')
-    expect(result).toEqual('Hello, Larry the Llama')
+  it('exports MockSecretsClient', () => {
+    expect(index.MockSecretsClient).toEqual(MockSecretsClient)
   })
 })
