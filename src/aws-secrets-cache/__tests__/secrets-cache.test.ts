@@ -26,7 +26,7 @@ describe('SecretsCache', () => {
     const describeSpy = jest.spyOn(client, 'describeSecret')
     const getSpy = jest.spyOn(client, 'getSecretValue')
 
-    await cache.getSecretValue({ SecretId: 'mysecret' })
+    await cache.getSecretValue('mysecret')
 
     expect(describeSpy).toBeCalledTimes(1)
     expect(getSpy).toBeCalledTimes(1)
@@ -39,7 +39,7 @@ describe('SecretsCache', () => {
     })
     const cache = new SecretsCache()
 
-    const response = await cache.getSecretValue({ SecretId: 'mysecret' })
+    const response = await cache.getSecretValue('mySecret')
 
     expect(response).toEqual(exampleVersionResponse)
   })
@@ -51,10 +51,7 @@ describe('SecretsCache', () => {
     })
     const cache = new SecretsCache()
 
-    const response = await cache.getSecretValue({
-      SecretId: 'mysecret',
-      VersionStage: 'NOTCURRENT'
-    })
+    const response = await cache.getSecretValue('mySecret', { versionStage: 'NOTCURRENT' })
 
     expect(response).toEqual(exampleVersionResponse)
   })
@@ -66,7 +63,7 @@ describe('SecretsCache', () => {
     })
     const cache = new SecretsCache()
 
-    const response = await cache.getSecretValue({ SecretId: 'mysecret' })
+    const response = await cache.getSecretValue('mySecret')
 
     expect(response).toBe(null)
   })
@@ -78,7 +75,7 @@ describe('SecretsCache', () => {
     })
     const cache = new SecretsCache()
 
-    const response = await cache.getSecretValue({ SecretId: 'mysecret' })
+    const response = await cache.getSecretValue('mySecret')
 
     expect(response).toBe(null)
   })
@@ -95,7 +92,7 @@ describe('SecretsCache', () => {
     const getSpy = jest.spyOn(client, 'getSecretValue')
 
     for (let i = 0; i < 10; i++) {
-      const response = await cache.getSecretValue({ SecretId: 'mysecret' })
+      const response = await cache.getSecretValue('mySecret')
 
       expect(response).toEqual(exampleVersionResponse)
     }

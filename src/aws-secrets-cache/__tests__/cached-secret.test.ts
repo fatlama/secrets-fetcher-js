@@ -31,7 +31,7 @@ describe('CachedSecret', () => {
       config: DEFAULT_CACHE_CONFIG
     })
 
-    const result = await cache.getSecretValue({ VersionId: exampleVersionId })
+    const result = await cache.getSecretValue({ versionId: exampleVersionId })
 
     expect(result).toEqual(exampleVersionResponse)
   })
@@ -50,7 +50,7 @@ describe('CachedSecret', () => {
       config: DEFAULT_CACHE_CONFIG
     })
 
-    const result = await cache.getSecretValue({ VersionStage: 'NOTCURRENT' })
+    const result = await cache.getSecretValue({ versionStage: 'NOTCURRENT' })
 
     expect(result).toEqual(exampleVersionResponse)
   })
@@ -67,7 +67,7 @@ describe('CachedSecret', () => {
       config: DEFAULT_CACHE_CONFIG
     })
 
-    const result = await cache.getSecretValue({ VersionStage: 'NOTCURRENT' })
+    const result = await cache.getSecretValue({ versionStage: 'NOTCURRENT' })
 
     expect(result).toEqual(null)
   })

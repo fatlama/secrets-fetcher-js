@@ -1,12 +1,17 @@
 import LRU from 'lru-cache'
 import { SecretsManager } from 'aws-sdk'
-import { GetSecretValueRequest, GetSecretValueResponse } from 'aws-sdk/clients/secretsmanager'
+import { GetSecretValueResponse } from 'aws-sdk/clients/secretsmanager'
 import { CachedSecret } from './cached-secret'
 import { CacheConfig, DEFAULT_CACHE_CONFIG } from './types'
 
 interface SecretsCacheOpts {
   client: Pick<SecretsManager, 'describeSecret' | 'getSecretValue'>
   config: CacheConfig
+}
+
+interface GetSecretValueOpts {
+  versionId?: string
+  versionStage?: string
 }
 
 /**
@@ -25,9 +30,9 @@ interface SecretsCacheOpts {
  * }
  *
  * // Fetch a specific VersionStage
- * > const secret = await cache.getSecretValue({
- *   SecretId: 'mySecret',
- *   VersionStage: 'AWSPREVIOUS'
+ * > const secret = await cache.getSecretValue(
+ *   'mySecret',
+ *   { versionStage: 'AWSPREVIOUS' }
  * })
  */
 export class SecretsCache {
@@ -47,13 +52,12 @@ export class SecretsCache {
    * @param request the request as you would normally use when calling SecretsManager.GetSecretValue
    */
   public async getSecretValue(
-    request: GetSecretValueRequest
+    secretId: string,
+    opts: GetSecretValueOpts = {}
   ): Promise<GetSecretValueResponse | null> {
-    const secretId = request.SecretId
-
     const existing = this._cache.get(secretId)
     if (existing) {
-      return existing.getSecretValue(request)
+      return existing.getSecretValue(opts)
     }
 
     const secret = new CachedSecret({
@@ -64,6 +68,6 @@ export class SecretsCache {
 
     this._cache.set(secretId, secret)
 
-    return secret.getSecretValue(request)
+    return secret.getSecretValue(opts)
   }
 }

@@ -1,6 +1,6 @@
 import LRU from 'lru-cache'
 import { SecretsManager } from 'aws-sdk'
-import { GetSecretValueRequest, GetSecretValueResponse } from 'aws-sdk/clients/secretsmanager'
+import { GetSecretValueResponse } from 'aws-sdk/clients/secretsmanager'
 import { CacheConfig } from './types'
 import { CachedSecretVersion } from './cached-secret-version'
 
@@ -8,6 +8,11 @@ interface CachedSecretArgs {
   secretId: string
   client: Pick<SecretsManager, 'describeSecret' | 'getSecretValue'>
   config: CacheConfig
+}
+
+interface GetSecretValueOpts {
+  versionId?: string
+  versionStage?: string
 }
 
 interface StringHashMap {
@@ -24,7 +29,7 @@ interface StringHashMap {
  * * A stage maps to one version
  * * A version can map to many stages
  *
- * == Example
+ * == Basic Example
  *
  * > const cachedSecret = new CachedSecret({
  *     secretId: 'mySuperTopSecret',
@@ -33,8 +38,8 @@ interface StringHashMap {
  *       secretRefreshInterval: 60 * 5, ...
  *     }
  *   })
+ * // Fetch the default AWSCURRENT value
  * > const secretValue = await cachedSecret.getSecretValue()
- * > secretValue
  * {
  *   SecretString: '{"username":"myUsername","password":"s00perSekret"}',
  *   ...
@@ -61,21 +66,27 @@ export class CachedSecret {
   }
 
   /**
-   * Fetch the current value for the given versionStage
+   * Fetch the current value, optionally for the provided versionStage or versionId
    *
-   * @param request either a VersionId or VersionStage whose value should be fetched
+   * // Fetch for versionStage AWSCURRENT
+   * > const secretValue = await cachedSecret.getSecretValue()
+   *
+   * // Fetch a specific versionStage
+   * > const secretValue = await cachedSecret.getSecretValue({ versionStage: 'AWSCURRENT' })
+   *
+   * // Fetch a specific versionId
+   * > const secretValue = await cachedSecret.getSecretValue({ versionId: '123456' })
    */
   public async getSecretValue(
-    request: Pick<GetSecretValueRequest, 'VersionId' | 'VersionStage'>
+    opts: GetSecretValueOpts = {}
   ): Promise<GetSecretValueResponse | null> {
-    const versionId = request.VersionId
+    const { versionId, versionStage } = opts
     if (versionId) {
       const version = await this._getVersionById(versionId)
 
       return version.getSecretValue()
     }
 
-    const versionStage = request.VersionStage
     const version = await this._getVersionForStage(versionStage || this._config.defaultVersionStage)
     if (!version) {
       return null
