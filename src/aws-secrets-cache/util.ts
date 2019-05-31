@@ -1,4 +1,3 @@
-
 /**
  * Randomly chooses a future timestamp in ms based on the ttl provided
  *
