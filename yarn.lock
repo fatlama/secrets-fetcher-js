@@ -149,6 +149,14 @@
   resolved "https://registry.yarnpkg.com/@fatlama/eslint-config-typescript/-/eslint-config-typescript-1.1.0.tgz#1922bf0e12845515c6cbfe0a69036cfd98b0de8b"
   integrity sha512-vDbl+3cwDFv3rNiBLelZ7cUSpBhUTdYn9/fg6sP10mL/3195ktkThxQ8RSoRAPv83N6PhjEuuGp19JT+lqBwaw==
 
+"@fatlama/fl-secretsmanager-caching@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@fatlama/fl-secretsmanager-caching/-/fl-secretsmanager-caching-1.0.0.tgz#95b82b73d204741a22e0bba0aeb86a21b9c09578"
+  integrity sha512-NGR/VNbzc2FX1W/eS2+srbZtx0xRsPYGwVOhYfmDwLC0QVJM7Rf/ajD1H9cuFqTOM0JljDh8fJghc/AE2UvDYg==
+  dependencies:
+    aws-sdk "^2.466.0"
+    lru-cache "^5.1.1"
+
 "@jest/console@^24.7.1":
   version "24.7.1"
   resolved "https://registry.yarnpkg.com/@jest/console/-/console-24.7.1.tgz#32a9e42535a97aedfe037e725bd67e954b459545"
@@ -3104,6 +3112,13 @@ loose-envify@^1.0.0, loose-envify@^1.4.0:
   integrity sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==
   dependencies:
     js-tokens "^3.0.0 || ^4.0.0"
+
+lru-cache@^5.1.1:
+  version "5.1.1"
+  resolved "https://registry.yarnpkg.com/lru-cache/-/lru-cache-5.1.1.tgz#1da27e6710271947695daf6848e847f01d84b920"
+  integrity sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==
+  dependencies:
+    yallist "^3.0.2"
 
 make-dir@^2.1.0:
   version "2.1.0"

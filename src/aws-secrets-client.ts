@@ -1,9 +1,12 @@
 import { SecretsManager as AWSSecretsManager } from 'aws-sdk'
+import { SecretsCache } from '@fatlama/fl-secretsmanager-caching'
 import { GetSecretValueResponse } from 'aws-sdk/clients/secretsmanager'
 import { FetchOpts, SecretsClient } from './types'
+import { NotFoundError } from './errors'
 
 interface SecretsClientOpts {
   awsClient: AWSSecretsManager
+  secretsCache: SecretsCache
 }
 
 /**
@@ -18,16 +21,13 @@ interface SecretsClientOpts {
  *
  * // Fetch for a specific VersionStage
  * > const apiKey = await client.fetchString('my/api/key', { versionStage: 'AWSPENDING' })
- *
- * == TODO
- *
- * * Add an L1 caching option
  */
 export class AWSSecretsClient implements SecretsClient {
-  private _client: AWSSecretsManager
+  private _cacheClient: SecretsCache
 
   public constructor(clientOpts: Partial<SecretsClientOpts> = {}) {
-    this._client = clientOpts.awsClient || new AWSSecretsManager()
+    const awsClient = clientOpts.awsClient || new AWSSecretsManager()
+    this._cacheClient = clientOpts.secretsCache || new SecretsCache({ client: awsClient })
   }
 
   /**
@@ -47,6 +47,10 @@ export class AWSSecretsClient implements SecretsClient {
   public async fetchString(secretId: string, opts: FetchOpts = {}): Promise<string> {
     const secret = await this._getSecret(secretId, opts)
 
+    if (!secret) {
+      throw new NotFoundError("can't find the specified secret")
+    }
+
     if (secret.SecretString) {
       return secret.SecretString
     }
@@ -65,6 +69,10 @@ export class AWSSecretsClient implements SecretsClient {
   public async fetchBuffer(secretId: string, opts: FetchOpts = {}): Promise<Buffer> {
     const secret = await this._getSecret(secretId, opts)
 
+    if (!secret) {
+      throw new NotFoundError("can't find the specified secret")
+    }
+
     if (secret.SecretBinary) {
       return Buffer.from(secret.SecretBinary as string, 'base64')
     }
@@ -76,15 +84,12 @@ export class AWSSecretsClient implements SecretsClient {
     throw new Error('expected SecretString or SecretBinary to be present')
   }
 
-  private async _getSecret(secretId: string, opts: FetchOpts): Promise<GetSecretValueResponse> {
+  private async _getSecret(
+    secretId: string,
+    opts: FetchOpts
+  ): Promise<GetSecretValueResponse | null> {
     const { versionId, versionStage } = opts
 
-    return this._client
-      .getSecretValue({
-        SecretId: secretId,
-        VersionId: versionId,
-        VersionStage: versionStage
-      })
-      .promise()
+    return this._cacheClient.getSecretValue(secretId, { versionId, versionStage })
   }
 }
