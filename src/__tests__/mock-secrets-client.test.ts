@@ -71,7 +71,7 @@ describe('MockSecretsClient', () => {
 
     it('throws the original NotFoundError on a missing secret', async () => {
       const promise = client.fetchBuffer('not-a-real-secret')
-      await expect(promise).rejects.toThrow(NotFoundError)
+      await expect(promise).rejects.toThrow("can't find the specified secret")
     })
   })
 })

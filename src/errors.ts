@@ -3,7 +3,7 @@ export class NotFoundError extends Error {
 
   public constructor(message?: string) {
     super(message)
+    this.name = 'NotFoundError' // reset the name back after calling super()
     this.code = 'ResourceNotFoundException'
-    Object.setPrototypeOf(this, NotFoundError.prototype)
   }
 }
