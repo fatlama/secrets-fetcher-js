@@ -6,13 +6,29 @@
   "repository": "github.com/fatlama/secrets-fetcher-js",
   "author": "Fat Llama",
   "license": "UNLICENSED",
+  "files": [
+    "dist/**/*"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist coverage tsconfig.tsbuildinfo .eslintcache",
+    "format": "prettier --parser typescript --write src/**/*.ts",
+    "lint": "tsc --noEmit && eslint --cache --ext .ts src",
+    "release": "yarn clean && yarn build && yarn test && yarn lint",
+    "test": "jest"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.466.0"
+  },
   "devDependencies": {
-    "@fatlama/eslint-config": "^1.0.6",
+    "@fatlama/eslint-config-base": "^1.1.0",
+    "@fatlama/eslint-config-typescript": "^1.1.0",
     "@types/jest": "^24.0.13",
     "@types/node": "^12.0.4",
     "@typescript-eslint/eslint-plugin": "^1.9.0",
     "@typescript-eslint/parser": "^1.9.0",
     "aws-sdk-mock": "^4.4.0",
+    "codecov": "^3.5.0",
     "eslint": "^5.16.0",
     "eslint-config-prettier": "^4.3.0",
     "eslint-config-standard": "^12.0.0",
@@ -22,28 +38,13 @@
     "eslint-plugin-node": "^9.1.0",
     "eslint-plugin-prettier": "^3.1.0",
     "eslint-plugin-promise": "^4.1.1",
-    "eslint-plugin-ramda": "^2.5.1",
     "eslint-plugin-standard": "^4.0.0",
     "eslint-plugin-unicorn": "^8.0.2",
     "jest": "^24.8.0",
     "prettier": "^1.17.1",
+    "standard": "^12.0.1",
     "ts-jest": "^24.0.2",
-    "typescript": "^3.5.0"
-  },
-  "files": [
-    "dist/**/*"
-  ],
-  "scripts": {
-    "build": "tsc",
-    "clean": "rm -rf dist coverage tsconfig.tsbuildinfo",
-    "format": "prettier --parser typescript --write src/**/*.ts",
-    "lint": "tsc --noEmit && eslint --cache --ext .ts src",
-    "prepare": "yarn build",
-    "prepublishOnly": "yarn test && yarn lint",
-    "preversion": "yarn lint",
-    "release": "yarn clean && yarn build && yarn test && yarn lint",
-    "test": "jest",
-    "version": "yarn run format && git add -A src"
+    "typescript": "^3.4.5"
   },
   "jest": {
     "coverageDirectory": "./coverage/",
@@ -62,8 +63,5 @@
       "json",
       "node"
     ]
-  },
-  "dependencies": {
-    "aws-sdk": "^2.466.0"
   }
 }
