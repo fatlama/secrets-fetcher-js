@@ -1,0 +1,17 @@
+## v1.2.0 (2019-06-17)
+
+### major: change backing store to @fatlama/fl-secretsmanager-caching
+
+Previously every call for a secret resulted in a call to the AWS Secrets Manager API, which is excessive given the read-heavy
+nature of fetching secret values. v1.2.0 adds the Secrets Manager caching layer to cache secrets for up to a maximum time period
+(default: max 1 hour) before refreshing the list of VersionStages and VersionIds.
+
+### General
+
+* Add MIT license
+* Add CHANGELOG
+* Rebase package.json format and README to match internal standards
+
+### TypeScript
+
+* Rename `FetchOpts` to `FetchOptions`. This value was not being used previously
