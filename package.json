@@ -18,6 +18,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@fatlama/fl-secretsmanager-caching": "^1.1.0",
     "aws-sdk": "^2.466.0"
   },
   "devDependencies": {

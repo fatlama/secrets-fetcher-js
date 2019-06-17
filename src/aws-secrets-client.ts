@@ -1,9 +1,13 @@
 import { SecretsManager as AWSSecretsManager } from 'aws-sdk'
+import { SecretsCache, SecretsCacheOptions } from '@fatlama/fl-secretsmanager-caching'
 import { GetSecretValueResponse } from 'aws-sdk/clients/secretsmanager'
-import { FetchOpts, SecretsClient } from './types'
+import { FetchOptions, SecretsClient } from './types'
+import { NotFoundError } from './errors'
 
 interface SecretsClientOpts {
   awsClient: AWSSecretsManager
+  secretsCache: SecretsCache
+  cacheConfig: SecretsCacheOptions
 }
 
 /**
@@ -18,16 +22,15 @@ interface SecretsClientOpts {
  *
  * // Fetch for a specific VersionStage
  * > const apiKey = await client.fetchString('my/api/key', { versionStage: 'AWSPENDING' })
- *
- * == TODO
- *
- * * Add an L1 caching option
  */
 export class AWSSecretsClient implements SecretsClient {
-  private _client: AWSSecretsManager
+  private _cacheClient: SecretsCache
 
   public constructor(clientOpts: Partial<SecretsClientOpts> = {}) {
-    this._client = clientOpts.awsClient || new AWSSecretsManager()
+    const awsClient = clientOpts.awsClient || new AWSSecretsManager()
+    const cacheConfig = { client: awsClient, ...clientOpts.cacheConfig }
+
+    this._cacheClient = clientOpts.secretsCache || new SecretsCache(cacheConfig)
   }
 
   /**
@@ -38,14 +41,18 @@ export class AWSSecretsClient implements SecretsClient {
    *
    * @type T the expected return shape
    */
-  public async fetchJSON<T>(secretId: string, opts: FetchOpts = {}): Promise<T> {
+  public async fetchJSON<T>(secretId: string, opts: FetchOptions = {}): Promise<T> {
     const secret = await this.fetchString(secretId, opts)
 
     return JSON.parse(secret)
   }
 
-  public async fetchString(secretId: string, opts: FetchOpts = {}): Promise<string> {
+  public async fetchString(secretId: string, opts: FetchOptions = {}): Promise<string> {
     const secret = await this._getSecret(secretId, opts)
+
+    if (!secret) {
+      throw new NotFoundError("can't find the specified secret")
+    }
 
     if (secret.SecretString) {
       return secret.SecretString
@@ -62,8 +69,12 @@ export class AWSSecretsClient implements SecretsClient {
    * Fetch the secret and return the response payload as a Buffer regardless if the payload
    * is in SecretString or SecretBinary
    */
-  public async fetchBuffer(secretId: string, opts: FetchOpts = {}): Promise<Buffer> {
+  public async fetchBuffer(secretId: string, opts: FetchOptions = {}): Promise<Buffer> {
     const secret = await this._getSecret(secretId, opts)
+
+    if (!secret) {
+      throw new NotFoundError("can't find the specified secret")
+    }
 
     if (secret.SecretBinary) {
       return Buffer.from(secret.SecretBinary as string, 'base64')
@@ -76,15 +87,10 @@ export class AWSSecretsClient implements SecretsClient {
     throw new Error('expected SecretString or SecretBinary to be present')
   }
 
-  private async _getSecret(secretId: string, opts: FetchOpts): Promise<GetSecretValueResponse> {
-    const { versionId, versionStage } = opts
-
-    return this._client
-      .getSecretValue({
-        SecretId: secretId,
-        VersionId: versionId,
-        VersionStage: versionStage
-      })
-      .promise()
+  private async _getSecret(
+    secretId: string,
+    opts: FetchOptions
+  ): Promise<GetSecretValueResponse | null> {
+    return this._cacheClient.getSecretValue(secretId, opts)
   }
 }

@@ -1,7 +1,8 @@
 import * as AWS from 'aws-sdk-mock'
-import { AWSError, SecretsManager } from 'aws-sdk'
+import { SecretsManager } from 'aws-sdk'
+import { GetSecretValueResponse } from 'aws-sdk/clients/secretsmanager'
+import { SecretsCache } from '@fatlama/fl-secretsmanager-caching'
 import { AWSSecretsClient } from '../aws-secrets-client'
-import { GetSecretValueRequest, GetSecretValueResponse } from 'aws-sdk/clients/secretsmanager'
 
 interface Credential {
   username: string
@@ -9,7 +10,8 @@ interface Credential {
 }
 
 describe('AWSSecretsClient', () => {
-  let client: AWSSecretsClient, awsClient: SecretsManager
+  let client: AWSSecretsClient, awsClient: SecretsManager, secretsCache: SecretsCache
+  let getSpy: jest.SpyInstance
 
   const jsonSecret = {
     username: 'kitty',
@@ -33,25 +35,22 @@ describe('AWSSecretsClient', () => {
     awsDoneMessedUp: {}
   }
 
-  beforeEach(() => {
-    AWS.mock('SecretsManager', 'getSecretValue', (
-      params: GetSecretValueRequest,
-      // eslint-disable-next-line promise/prefer-await-to-callbacks,@typescript-eslint/no-explicit-any
-      callback: (err: any, data?: GetSecretValueResponse) => void
-    ) => {
-      const response = responses[params.SecretId]
-      if (response) {
-        // eslint-disable-next-line promise/prefer-await-to-callbacks
-        return callback(null, response)
-      }
+  const previousVersionId = '12345-previous-aws-version'
 
-      const error = new AWSError('Could not find secret')
-      // eslint-disable-next-line promise/prefer-await-to-callbacks
-      return callback(error)
-    })
+  const versionIdsToStages = {
+    '54321-current-aws-version': ['AWSCURRENT'],
+    '12345-previous-aws-version': ['AWSPREVIOUS']
+  }
+
+  beforeEach(() => {
+    AWS.mock('SecretsManager', 'describeSecret', { VersionIdsToStages: versionIdsToStages })
+    AWS.mock('SecretsManager', 'getSecretValue', responses.mySecretString)
 
     awsClient = new SecretsManager()
-    client = new AWSSecretsClient({ awsClient })
+    secretsCache = new SecretsCache({ client: awsClient })
+    client = new AWSSecretsClient({ secretsCache })
+
+    getSpy = jest.spyOn(secretsCache, 'getSecretValue')
   })
 
   afterEach(() => {
@@ -60,9 +59,7 @@ describe('AWSSecretsClient', () => {
 
   describe('constructor', () => {
     it('uses the supplied awsClient', async () => {
-      const awsClient = new SecretsManager()
       const getSpy = jest.spyOn(awsClient, 'getSecretValue')
-
       const client = new AWSSecretsClient({ awsClient })
       await client.fetchString('mySecretString')
 
@@ -70,121 +67,167 @@ describe('AWSSecretsClient', () => {
     })
 
     it('can initialize its own awsClient', async () => {
+      AWS.mock('SecretsManager', 'describeSecret', { VersionIdsToStages: versionIdsToStages })
+      AWS.mock('SecretsManager', 'getSecretValue', responses.mySecretString)
+
       const client = new AWSSecretsClient()
       const result = await client.fetchString('mySecretString')
       expect(result).toEqual(textSecret)
+    })
+
+    it('allows consumers to configure the underlying cache', async () => {
+      AWS.mock('SecretsManager', 'describeSecret', { VersionIdsToStages: versionIdsToStages })
+      AWS.mock('SecretsManager', 'getSecretValue', responses.mySecretString)
+      const getSpy = jest.spyOn(awsClient, 'getSecretValue')
+
+      const client = new AWSSecretsClient({
+        awsClient,
+        cacheConfig: {
+          config: {
+            defaultVersionStage: 'AWSPREVIOUS'
+          }
+        }
+      })
+      await client.fetchString('mySecretString')
+
+      expect(getSpy).toBeCalledWith({ SecretId: 'mySecretString', VersionId: previousVersionId })
     })
   })
 
   describe('fetchString', () => {
     it('returns the expected string from a SecretString', async () => {
+      getSpy.mockImplementation(async () => responses.mySecretString)
       const secret = await client.fetchString('mySecretString')
       expect(secret).toEqual(textSecret)
     })
 
     it('returns the expected string from a SecretBinary', async () => {
+      getSpy.mockImplementation(async () => responses.mySecretBinary)
       const secret = await client.fetchString('mySecretBinary')
       expect(secret).toEqual(textSecret)
     })
 
-    it('passes down the versionId and versionStage if provided', async () => {
-      const getSpy = jest.spyOn(awsClient, 'getSecretValue')
+    it('passes down the versionId if provided', async () => {
+      getSpy.mockImplementation(async () => responses.mySecretString)
 
-      const versionId = '12345678'
-      const versionStage = 'AWSPREVIOUS'
+      await client.fetchString('mySecretString', { versionId: previousVersionId })
 
-      await client.fetchString('mySecretString', { versionId, versionStage })
-
-      expect(getSpy).toBeCalledWith({
-        SecretId: 'mySecretString',
-        VersionId: versionId,
-        VersionStage: versionStage
-      })
+      expect(getSpy).toBeCalledWith('mySecretString', { versionId: previousVersionId })
     })
 
-    it('throws the original AWS error on a missing secret', async () => {
+    it('passes down the versionStage if provided', async () => {
+      getSpy.mockImplementation(async () => responses.mySecretString)
+
+      await client.fetchString('mySecretString', { versionStage: 'AWSPREVIOUS' })
+
+      expect(getSpy).toBeCalledWith('mySecretString', { versionStage: 'AWSPREVIOUS' })
+    })
+
+    it('throws an error on a missing secret', async () => {
+      getSpy.mockImplementation(async () => null)
       const promise = client.fetchString('not-a-real-secret')
-      await expect(promise).rejects.toThrow(AWSError)
+      await expect(promise).rejects.toThrow("can't find the specified secret")
     })
 
     it('throws an error if AWS returns an invalid response', async () => {
+      getSpy.mockImplementation(async () => ({}))
+
       const promise = client.fetchString('awsDoneMessedUp')
+
       await expect(promise).rejects.toThrow(Error)
     })
   })
 
   describe('fetchJSON', () => {
     it('returns the expected JSON from a SecretString', async () => {
+      getSpy.mockImplementation(async () => responses.mySecretString)
       const secret = await client.fetchJSON<Credential>('mySecretString')
       expect(secret).toEqual(jsonSecret)
     })
 
     it('returns the expected JSON from a SecretBinary', async () => {
+      getSpy.mockImplementation(async () => responses.mySecretBinary)
       const secret = await client.fetchJSON<Credential>('mySecretBinary')
       expect(secret).toEqual(jsonSecret)
     })
 
-    it('passes down the versionId and versionStage if provided', async () => {
-      const getSpy = jest.spyOn(awsClient, 'getSecretValue')
+    it('passes down the versionId if provided', async () => {
+      getSpy.mockImplementation(async () => responses.mySecretString)
 
-      const versionId = '12345678'
-      const versionStage = 'AWSPREVIOUS'
+      await client.fetchJSON('mySecretString', { versionId: previousVersionId })
 
-      await client.fetchJSON('mySecretString', { versionId, versionStage })
+      expect(getSpy).toBeCalledWith('mySecretString', { versionId: previousVersionId })
+    })
 
-      expect(getSpy).toBeCalledWith({
-        SecretId: 'mySecretString',
-        VersionId: versionId,
-        VersionStage: versionStage
-      })
+    it('passes down the versionStage if provided', async () => {
+      getSpy.mockImplementation(async () => responses.mySecretString)
+
+      await client.fetchJSON('mySecretString', { versionStage: 'AWSPREVIOUS' })
+
+      expect(getSpy).toBeCalledWith('mySecretString', { versionStage: 'AWSPREVIOUS' })
     })
 
     it('throws the original JSON parse exception on invalid JSON', async () => {
+      getSpy.mockImplementation(async () => responses.myInvalidJson)
       const promise = client.fetchJSON<Credential>('myInvalidJson')
       expect(promise).rejects.toThrow(SyntaxError)
     })
 
-    it('throws the original AWS error on a missing secret', async () => {
+    it('throws a NotFoundError on a missing secret', async () => {
+      getSpy.mockImplementation(async () => null)
       const promise = client.fetchJSON<Credential>('not-a-real-secret')
-      await expect(promise).rejects.toThrow(AWSError)
+      await expect(promise).rejects.toThrow("can't find the specified secret")
     })
   })
 
   describe('fetchBuffer', () => {
     it('returns the expected string from a SecretString', async () => {
+      getSpy.mockImplementation(async () => responses.mySecretString)
+
       const secret = await client.fetchBuffer('mySecretString')
+
       expect(secret).toBeInstanceOf(Buffer)
       expect(secret.toString()).toEqual(textSecret)
     })
 
     it('returns the expected string from a SecretBinary', async () => {
+      getSpy.mockImplementation(async () => responses.mySecretBinary)
+
       const secret = await client.fetchBuffer('mySecretBinary')
+
       expect(secret).toBeInstanceOf(Buffer)
       expect(secret.toString()).toEqual(textSecret)
     })
 
-    it('passes down the versionId and versionStage if provided', async () => {
-      const getSpy = jest.spyOn(awsClient, 'getSecretValue')
+    it('passes down the versionId if provided', async () => {
+      getSpy.mockImplementation(async () => responses.mySecretString)
 
-      const versionId = '12345678'
-      const versionStage = 'AWSPREVIOUS'
+      await client.fetchBuffer('mySecretString', { versionId: previousVersionId })
 
-      await client.fetchBuffer('mySecretString', { versionId, versionStage })
-
-      expect(getSpy).toBeCalledWith({
-        SecretId: 'mySecretString',
-        VersionId: versionId,
-        VersionStage: versionStage
-      })
+      expect(getSpy).toBeCalledWith('mySecretString', { versionId: previousVersionId })
     })
 
-    it('throws the original AWS error on a missing secret', async () => {
+    it('passes down the versionStage if provided', async () => {
+      getSpy.mockImplementation(async () => responses.mySecretString)
+
+      await client.fetchBuffer('mySecretString', { versionStage: 'AWSPREVIOUS' })
+
+      expect(getSpy).toBeCalledWith('mySecretString', { versionStage: 'AWSPREVIOUS' })
+    })
+
+    it('throws a NotFoundError on a missing secret', async () => {
+      getSpy.mockImplementation(async () => null)
+
       const promise = client.fetchBuffer('not-a-real-secret')
-      await expect(promise).rejects.toThrow(AWSError)
+
+      await expect(promise).rejects.toThrow("can't find the specified secret")
     })
 
     it('throws an error if AWS returns an invalid response', async () => {
+      getSpy.mockImplementation(async () => ({}))
+
       const promise = client.fetchBuffer('awsDoneMessedUp')
+
       await expect(promise).rejects.toThrow(Error)
     })
   })
