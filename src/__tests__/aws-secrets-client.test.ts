@@ -1,7 +1,7 @@
 import * as AWS from 'aws-sdk-mock'
 import { SecretsManager } from 'aws-sdk'
 import { GetSecretValueResponse } from 'aws-sdk/clients/secretsmanager'
-import { SecretsCache } from '../../../fl-secretsmanager-caching-js'
+import { SecretsCache } from '@fatlama/fl-secretsmanager-caching'
 import { AWSSecretsClient } from '../aws-secrets-client'
 
 interface Credential {
