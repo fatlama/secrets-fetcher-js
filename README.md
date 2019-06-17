@@ -9,7 +9,9 @@ only provides the barebone methods around running in JavaScript that don't quite
 abstract out the calls to AWS Secrets Manager behind a native-feeling JS library, complete with TypeScript, data-type
 specific fetch operations, and first-class promises.
 
-Additionally, this library handles caching secrets in-memory to reduce the calls made to AWS Secrets Manager while still allowing upstream clients to fetch different VersionStages of a secret (useful for handling secret rotation without restarting services).
+Additionally, this library handles caching secrets in-memory to reduce the calls made to AWS Secrets Manager while
+still allowing upstream clients to fetch different VersionStages of a secret (useful for handling secret rotation
+without restarting services).
 
 Finally, the library provides TypeScript definitions and a mock client to make compile-time checks and tests easier.
 
