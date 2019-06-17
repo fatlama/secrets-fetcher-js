@@ -11,3 +11,7 @@ nature of fetching secret values. v1.2.0 adds the Secrets Manager caching layer 
 * Add MIT license
 * Add CHANGELOG
 * Rebase package.json format and README to match internal standards
+
+### TypeScript
+
+* Rename `FetchOpts` to `FetchOptions`. This value was not being used previously
