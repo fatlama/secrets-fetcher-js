@@ -74,6 +74,24 @@ describe('AWSSecretsClient', () => {
       const result = await client.fetchString('mySecretString')
       expect(result).toEqual(textSecret)
     })
+
+    it('allows consumers to configure the underlying cache', async () => {
+      AWS.mock('SecretsManager', 'describeSecret', { VersionIdsToStages: versionIdsToStages })
+      AWS.mock('SecretsManager', 'getSecretValue', responses.mySecretString)
+      const getSpy = jest.spyOn(awsClient, 'getSecretValue')
+
+      const client = new AWSSecretsClient({
+        awsClient,
+        cacheConfig: {
+          config: {
+            defaultVersionStage: 'AWSPREVIOUS'
+          }
+        }
+      })
+      await client.fetchString('mySecretString')
+
+      expect(getSpy).toBeCalledWith({ SecretId: 'mySecretString', VersionId: previousVersionId })
+    })
   })
 
   describe('fetchString', () => {
