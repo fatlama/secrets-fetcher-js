@@ -5,14 +5,13 @@ Provides a simplified interface for fetching secrets from AWS Secrets Manager.
 ## Background
 
 The AWS SDK for JavaScript provides the basic client stubs for fetching secrets from Secrets Manager, however the API
-does not take advantage of running in JavaScript with regards to promises, nor does it make it easy to fetch various
-data types aside from strings and buffers.
+only provides the barebone methods around running in JavaScript that don't quite feel native. This library aims to
+abstract out the calls to AWS Secrets Manager behind a native-feeling JS library, complete with TypeScript, data-type
+specific fetch operations, and first-class promises.
 
-Additionally, this library handles caching secrets in-memory to reduce the calls made to AWS Secrets Manager while still
-allowing upstream clients fetch different VersionStages of a secret (useful for handling secret rotation without
-restarting services).
+Additionally, this library handles caching secrets in-memory to reduce the calls made to AWS Secrets Manager while still allowing upstream clients to fetch different VersionStages of a secret (useful for handling secret rotation without restarting services).
 
-Finally, the library provides TypeScript definitions to make compile-time checks easier.
+Finally, the library provides TypeScript definitions and a mock client to make compile-time checks and tests easier.
 
 ## Getting started
 
