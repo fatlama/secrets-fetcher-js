@@ -17,7 +17,7 @@ interface SecretsClientOpts {
  *
  * == Getting started
  *
- * > const client = new SecretsClient()
+ * > const client = new AWSSecretsClient()
  * > const credentials = await client.fetchJSON<Credentials>('my/secret/name')
  *
  * // Fetch for a specific VersionStage

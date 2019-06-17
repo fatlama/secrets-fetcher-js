@@ -77,6 +77,24 @@ Fetches a secret and returns it as a Buffer, regardless if it was stored as a Ba
 { username: 'myusername', password: 's00perSekr3t' }
 ```
 
+### Fetch Options
+
+All fetch operations support the following options as the second argument:
+
+* versionStage: Fetch the VersionId mapped to the specified stage (defaults to `AWSCURRENT`)
+* versionId: Fetch the specified VersionId
+* force: Force a cache miss and send a new request to AWS Secrets Manager
+
+NOTE: The mock client will ignore these parameters
+
+```
+// fetch the last version of the secret (useful for supporting automatic secret rotations)
+const oldCreds = await client.fetchJSON<CredentialPair>('/path/to/secret', { versionStage: 'AWSPREVIOUS' })
+
+// force the secret to be re-cached (perhaps when a rotation happens on a specific scheduled time)
+const creds = await client.fetchJSON<CredentialPair>('/path/to/secret', { force: true })
+```
+
 ## Configuration Options
 
 * awsClient: Use the provided AWS Secrets Manager client instead of creating a new default
@@ -94,7 +112,7 @@ const client: SecretsClient = new AWSSecretsClient({
   cacheConfig: {
     config: {
       maxCacheSize: 128,
-      secretRefreshInterval: 60 * 30 * 1000 // 30 minutes
+      secretRefreshInterval: 60 * 30 * 1000 // 30 minutes instead of the default 60 minutes
     }
   }
 })
