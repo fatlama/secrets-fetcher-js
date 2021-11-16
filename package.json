@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@fatlama/fl-secretsmanager-caching": "^1.1.0",
-    "aws-sdk": "^2.466.0"
+    "aws-sdk": "^2.814.0"
   },
   "devDependencies": {
     "@fatlama/eslint-config-base": "^1.1.0",
